@@ -84,6 +84,10 @@ function createBoid() {
     this.heading.add(steerVector);
     this.heading.normalize();
   });
+
+  boid.addBehavior(function() {
+    this.lookAt(new THREE.Vector3(0, 0, 0));
+  });
   flock.push(boid);
   scene.add(boid.mesh);
 }

@@ -11,7 +11,10 @@ this.Boid = (function() {
     this.velocity = new THREE.Vector3(0, 0, 0);
     this.heading = new THREE.Vector3(Math.random(), Math.random(), Math.random());
     this.heading.normalize();
-    this.up = new THREE.Vector3(Math.random(), Math.random(), Math.random());
+    this.up = this.mesh.up;
+    this.up.x = Math.random();
+    this.up.y = Math.random();
+    this.up.z = Math.random();
     this.up.normalize();
     this.sightRadius = options.sightRadius || 50;
     this.turnSpeed = options.turnSpeed || 50;
@@ -19,6 +22,10 @@ this.Boid = (function() {
     this.weight = options.weight || Math.random() / 2 + .5;
     this.callbacks = [];
     this.addBehavior(this._flock);
+  }
+
+  Boid.prototype.lookAt = function() {
+    this.mesh.lookAt.apply(this.mesh, arguments);
   }
 
   Boid.prototype.iterateNeighbors = function(func) {
