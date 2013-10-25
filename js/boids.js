@@ -11,10 +11,14 @@ this.Boid = (function() {
     this.velocity = new THREE.Vector3(0, 0, 0);
     this.heading = new THREE.Vector3(Math.random(), Math.random(), Math.random());
     this.heading.normalize();
+    this.up = new THREE.Vector3(Math.random(), Math.random(), Math.random());
+    this.up.normalize();
     this.sightRadius = options.sightRadius || 50;
     this.turnSpeed = options.turnSpeed || 50;
     this.maxTurnAngle = options.maxTurnAngle || 30;
     this.weight = options.weight || Math.random();
+    this.callbacks = [];
+    this.addBehavior(this._flock);
   }
 
   Boid.prototype.iterateNeighbors = function(func) {
@@ -33,6 +37,19 @@ this.Boid = (function() {
   // 2. Velocity matching (alignment)
   // 3. Flock centering (cohesion)
   Boid.prototype.tick = function(dt) {
+    var i, length = this.callbacks.length;
+    for (i = 0; i < length; i++) {
+      this.callbacks[i].call(this);
+    }
+    // Finally, add the heading to the position.
+    this.position.add(this.heading);
+  };
+
+  Boid.prototype.addBehavior = function(func) {
+    this.callbacks.push(func);
+  };
+
+  Boid.prototype._flock = function() {
     var separationVector = new THREE.Vector3(0, 0, 0)
       , alignmentVector = new THREE.Vector3(0, 0, 0)
       , cohesionVector = new THREE.Vector3()
@@ -83,7 +100,6 @@ this.Boid = (function() {
     steerVector.multiplyScalar(this.weight);
     this.heading.add(steerVector);
     this.heading.normalize();
-    this.position.add(this.heading);
   };
 
   return Boid;

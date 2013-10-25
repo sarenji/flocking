@@ -72,6 +72,17 @@ function createBoid() {
   boid.position.set(Math.random() * 200 - 100
                   , Math.random() * 200 - 100
                   , Math.random() * 200 - 100)
+  // Avoid going past a certain bound.
+  boid.addBehavior(function() {
+    var distance
+      , steerVector = new THREE.Vector3();
+    steerVector.copy(boid.position);
+    distance = 200 - boid.position.length();
+    steerVector.crossVectors(boid.position, boid.up);
+    steerVector.multiplyScalar(1 / (distance * distance));
+    this.heading.add(steerVector);
+    this.heading.normalize();
+  });
   flock.push(boid);
   scene.add(boid.mesh);
 }
