@@ -16,7 +16,7 @@ this.Boid = (function() {
     this.sightRadius = options.sightRadius || 50;
     this.turnSpeed = options.turnSpeed || 50;
     this.maxTurnAngle = options.maxTurnAngle || 30;
-    this.weight = options.weight || Math.random();
+    this.weight = options.weight || Math.random() / 2 + .5;
     this.callbacks = [];
     this.addBehavior(this._flock);
   }
@@ -37,12 +37,15 @@ this.Boid = (function() {
   // 2. Velocity matching (alignment)
   // 3. Flock centering (cohesion)
   Boid.prototype.tick = function(dt) {
-    var i, length = this.callbacks.length;
+    var i, length = this.callbacks.length, heading;
     for (i = 0; i < length; i++) {
       this.callbacks[i].call(this);
     }
     // Finally, add the heading to the position.
-    this.position.add(this.heading);
+    heading = new THREE.Vector3();
+    heading.copy(this.heading);
+    heading.multiplyScalar(this.weight);
+    this.position.add(heading);
   };
 
   Boid.prototype.addBehavior = function(func) {
