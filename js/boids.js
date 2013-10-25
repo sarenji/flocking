@@ -9,9 +9,11 @@ this.Boid = (function() {
     this.flock = flock;
     this.position = this.mesh.position;
     this.velocity = new THREE.Vector3(0, 0, 0);
-    this.heading = new THREE.Vector3(0, 0, 0);
+    this.heading = new THREE.Vector3(Math.random(), Math.random(), Math.random());
+    this.heading.normalize();
     this.sightRadius = options.sightRadius || 50;
     this.turnSpeed = options.turnSpeed || 50;
+    this.maxTurnAngle = options.maxTurnAngle || 30;
     this.weight = options.weight || Math.random();
   }
 
@@ -31,13 +33,12 @@ this.Boid = (function() {
   // 2. Velocity matching (alignment)
   // 3. Flock centering (cohesion)
   Boid.prototype.tick = function(dt) {
-    var length = this.flock.length
-      , separationVector = new THREE.Vector3(0, 0, 0)
+    var separationVector = new THREE.Vector3(0, 0, 0)
       , alignmentVector = new THREE.Vector3(0, 0, 0)
-      , cohesionVector = new THREE.Vector3(0, 0, 0)
+      , cohesionVector = new THREE.Vector3()
       , tempVector = new THREE.Vector3()
       , steerVector = new THREE.Vector3()
-      , i, distance;
+      , i, distance, cohesionLength;
 
     // 1. Separation
     // Get the inverse square distance between all flockmates, sum them, and
@@ -62,10 +63,13 @@ this.Boid = (function() {
     // We average all neighbor position vectors, subtract from the boid's
     // position, then normalize the result to get the direction toward the
     // center of the flock.
+    cohesionVector.copy(this.position);
+    cohesionLength = 1;
     this.iterateNeighbors(function(neighbor) {
       cohesionVector.add(neighbor.position);
+      cohesionLength++;
     });
-    cohesionVector.divideScalar(length);
+    cohesionVector.divideScalar(cohesionLength);
     cohesionVector.sub(this.position);
     cohesionVector.normalize();
 

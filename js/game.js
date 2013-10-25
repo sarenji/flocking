@@ -36,17 +36,18 @@ camera.lookAt(new THREE.Vector3(0,0,0));
 // start the renderer
 renderer.setSize(WIDTH, HEIGHT);
 
-var boxMaterial = new THREE.MeshLambertMaterial({
+var boidMaterial = new THREE.MeshLambertMaterial({
   color: 0xCC0000
 });
 
-var box = new THREE.Mesh(
-  new THREE.CubeGeometry(50, 50, 50),
-  boxMaterial
-);
+var highlightMaterial = new THREE.MeshLambertMaterial({
+  color: 0x33FF00,
+  transparent: true,
+  opacity: 0.5
+});
 
-// add the box to the scene
-scene.add(box);
+var highlightSphere = new THREE.Mesh(new THREE.SphereGeometry(5)
+                                   , highlightMaterial);
 
 var pointLight = new THREE.PointLight(0xFFFFFF);
 
@@ -66,7 +67,7 @@ $container.append(renderer.domElement);
 var flock = [];
 function createBoid() {
   var boid = new Boid(
-    new THREE.Mesh(new THREE.CubeGeometry(5, 5, 5), boxMaterial),
+    new THREE.Mesh(new THREE.CubeGeometry(5, 5, 5), boidMaterial),
     flock);
   boid.position.set(Math.random() * 200 - 100
                   , Math.random() * 200 - 100
