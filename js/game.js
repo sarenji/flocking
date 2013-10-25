@@ -23,15 +23,16 @@ var camera =
 
 var scene = new THREE.Scene();
 
-// add the camera to the scene
-scene.add(camera);
-
 // the camera starts at 0,0,0
 // so pull it back
 camera.position.x = 0;
 camera.position.y = 0;
 camera.position.z = 200;
 camera.lookAt(new THREE.Vector3(0,0,0));
+
+// var controls = new THREE.PointerLockControls(camera);
+var controls = new THREE.TrackballControls(camera);
+scene.add(camera);
 
 // start the renderer
 renderer.setSize(WIDTH, HEIGHT);
@@ -96,11 +97,12 @@ var previousFrame, frame, controller;
 
 controller = new Leap.Controller();
 
-function render() {
+function render(dt) {
   frame = controller.frame();
+  controls.update(dt);
   renderer.render(scene, camera);
   for (var i = 0, length = flock.length; i < length; i++) {
-    flock[i].tick();
+    flock[i].tick(dt);
   }
   previousFrame = frame;
 }
@@ -115,7 +117,7 @@ window.requestAnimFrame = (function(){
           };
 })();
 
-(function animloop(){
+(function animloop(dt){
   requestAnimFrame(animloop);
-  render();
+  render(dt);
 })();
