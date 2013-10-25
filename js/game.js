@@ -88,7 +88,7 @@ function createBoid() {
   scene.add(boid.mesh);
 }
 
-for (var i = 0; i < 40; i++) {
+for (var i = 0; i < 100; i++) {
   createBoid();
 }
 
