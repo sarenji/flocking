@@ -63,16 +63,13 @@ scene.add(pointLight);
 // attach the render-supplied DOM element
 $container.append(renderer.domElement);
 
-
 // Start adding boids
 var flock = [];
-function createBoid() {
-  var boid = new Boid(
-    new THREE.Mesh(new THREE.CubeGeometry(5, 5, 5), boidMaterial),
-    flock);
-  boid.position.set(Math.random() * 200 - 100
-                  , Math.random() * 200 - 100
-                  , Math.random() * 200 - 100)
+function createBoid(mesh) {
+  var boid = new Boid(mesh, flock);
+  boid.position.set(Math.random() * 1000 - 500
+                  , Math.random() * 1000 - 500
+                  , Math.random() * 1000 - 500)
   // Avoid going past a certain bound.
   boid.addBehavior(function() {
     var distance
@@ -92,9 +89,12 @@ function createBoid() {
   scene.add(boid.mesh);
 }
 
-for (var i = 0; i < 100; i++) {
-  createBoid();
-}
+$(document).on('geometryLoaded', function(e, geometry) {
+  for (var i = 0; i < 25; i++) {
+    createBoid(new THREE.Mesh(geometry.clone(),
+                              new THREE.MeshLambertMaterial(0x00FF00)));
+  }
+});
 
 
 var previousFrame, frame, controller;
@@ -116,7 +116,7 @@ window.requestAnimFrame = (function(){
   return  window.requestAnimationFrame       ||
           window.webkitRequestAnimationFrame ||
           window.mozRequestAnimationFrame    ||
-          function( callback ){
+          function(callback) {
             window.setTimeout(callback, 1000 / 60);
           };
 })();
@@ -125,3 +125,15 @@ window.requestAnimFrame = (function(){
   requestAnimFrame(animloop);
   render(dt);
 })();
+
+
+// Load fish
+var loader = new THREE.JSONLoader();
+loader.load("js/models/fish_a.js", fishLoaded);
+loader.load("js/models/fish_b.js", fishLoaded);
+loader.load("js/models/fish_c.js", fishLoaded);
+loader.load("js/models/fish_d.js", fishLoaded);
+
+function fishLoaded(geometry) {
+  $(document).trigger('geometryLoaded', geometry);
+}
