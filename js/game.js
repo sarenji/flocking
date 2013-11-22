@@ -181,31 +181,6 @@ function handleLeap(dt) {
     }
   }
 
-  // Split by detecting swipe motions
-  /*
-  for (var i = 0, length = frame.gestures.length; i < length; i++) {
-    gesture = frame.gestures[i];
-    if (gesture.type === 'swipe') {
-      direction = gesture.direction;
-      position = gesture.position;
-      repelForce = new THREE.Vector3(direction[0], direction[1], direction[2]);
-      repelForce.normalize();
-      handPosition = highlightSphere.position;
-      for (var j = 0; j < flock.length; j++) {
-        boidForce = new THREE.Vector3().copy(repelForce);
-        distance = flock[j].position.distanceToSquared(handPosition);
-        distance /= 1000;
-        boidForce.multiplyScalar(gesture.speed / distance);
-        flock[j].repel = {
-          force: boidForce,
-          originalForce: boidForce,
-          multiplier: 1
-        };
-      }
-    }
-  }
-  */
-
   // Record previous frame.
   previousFrame = frame;
 }
