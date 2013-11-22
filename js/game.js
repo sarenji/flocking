@@ -47,7 +47,7 @@ var boidMaterial = new THREE.MeshLambertMaterial({
 });
 
 var highlightMaterial = new THREE.MeshLambertMaterial({
-  color: 0x33FF00
+  color: 0xff0000
 });
 
 var highlightSphere = new THREE.Mesh(new THREE.SphereGeometry(50)
@@ -99,13 +99,8 @@ function createBoid(mesh) {
 
   boid.addBehavior(function() {
     if (this.repel) {
-      this.heading.add(this.repel.force);
-      this.repel.force.copy(this.repel.originalForce);
-      this.repel.force.multiplyScalar(this.repel.multiplier);
-      this.repel.multiplier *= .5;
-      if (this.repel.multiplier < 0.05) {
-        this.repel = null;
-      }
+      this.heading.add(this.repel).normalize();
+      this.repel = null;
     }
   });
 
@@ -168,16 +163,18 @@ function handleLeap(dt) {
 
       // The magnitude of the repel force is dependent on distance.
       distance = boidRelPos.length();
-      distance = (distance * distance) / 1000;
+      distance = (distance * distance);
       repelForce.normalize();
-      repelForce.multiplyScalar(50 / distance);
+      // repelForce.multiplyScalar(Math.min(2 * boid.weight, 500 / distance));
+      repelForce.multiplyScalar(50000 / distance);
+
+      // If we're attracting rather than repelling, then negate the vector.
+      if (!repel) {
+        repelForce.negate();
+      }
 
       // Store repel data as a property on the boid.
-      boid.repel = {
-        force: repelForce,
-        originalForce: repelForce,
-        multiplier: 1
-      };
+      boid.repel = repelForce;
     }
   }
 
@@ -211,3 +208,18 @@ loader.load("js/models/fish_d.js", fishLoaded);
 function fishLoaded(geometry) {
   $(document).trigger('geometryLoaded', geometry);
 }
+
+var repel = true;
+$(document).on('keypress', function(e) {
+  switch (e.which) {
+    case 116: // [t]
+      if (repel) {
+        repel = false;
+        highlightSphere.material.color.setHex(0x00ff00);
+      } else {
+        repel = true;
+        highlightSphere.material.color.setHex(0xff0000);
+      }
+      break;
+  }
+});

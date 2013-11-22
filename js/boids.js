@@ -18,7 +18,7 @@ this.Boid = (function() {
     this.up.normalize();
     this.sightRadius = options.sightRadius || 100;
     this.turnSpeed = options.turnSpeed || 50;
-    this.maxTurnAngle = options.maxTurnAngle || .5;
+    this.maxTurnAngle = options.maxTurnAngle || 1;
     this.maxTurnAngle *= Math.PI / 180;  // Radians.
     this.weight = options.weight || 4;
     this.callbacks = [];
