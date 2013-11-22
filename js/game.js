@@ -30,9 +30,8 @@ scene.add(axes);
 
 // the camera starts at 0,0,0
 // so pull it back
-camera.position.x = 0;
-camera.position.y = 0;
-camera.position.z = 2000;
+var defaultPosition = new THREE.Vector3(0, 0, 2000);
+camera.position.copy(defaultPosition);
 camera.lookAt(new THREE.Vector3(0,0,0));
 
 // var controls = new THREE.PointerLockControls(camera);
@@ -146,6 +145,7 @@ function handleLeap(dt) {
     highlightSphere.position.x = 2000 * hand.palmPosition[0] / frame.interactionBox.size[0];
     highlightSphere.position.y = 2000 * hand.palmPosition[1] / frame.interactionBox.size[1] - 1000;
     highlightSphere.position.z = 2000 * hand.palmPosition[2] / frame.interactionBox.size[2];
+    highlightSphere.position.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(camera.rotation));
 
     handPosition = highlightSphere.position;
     handDirection = hand.direction;
