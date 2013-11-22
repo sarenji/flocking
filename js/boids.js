@@ -16,10 +16,11 @@ this.Boid = (function() {
     this.up.y = Math.random();
     this.up.z = Math.random();
     this.up.normalize();
-    this.sightRadius = options.sightRadius || 50;
+    this.sightRadius = options.sightRadius || 100;
     this.turnSpeed = options.turnSpeed || 50;
-    this.maxTurnAngle = options.maxTurnAngle || 30;
-    this.weight = options.weight || Math.random() / 2 + .5;
+    this.maxTurnAngle = options.maxTurnAngle || .5;
+    this.maxTurnAngle *= Math.PI / 180;  // Radians.
+    this.weight = options.weight || 4;
     this.callbacks = [];
     this.addBehavior(this._flock);
   }
@@ -44,15 +45,35 @@ this.Boid = (function() {
   // 2. Velocity matching (alignment)
   // 3. Flock centering (cohesion)
   Boid.prototype.tick = function(dt) {
-    var i, length = this.callbacks.length, heading;
+    var i, length = this.callbacks.length, oldHeading, heading, angle;
+
+    // Store a copy of the old heading.
+    oldHeading = new THREE.Vector3();
+    oldHeading.copy(this.heading);
+
+    // Run all behavior functions
     for (i = 0; i < length; i++) {
       this.callbacks[i].call(this);
     }
-    // Finally, add the heading to the position.
-    heading = new THREE.Vector3();
-    heading.copy(this.heading);
+
+    // The boid behavior functions probably have changed the heading vector.
+    // We now limit the change of angle for the heading vector to
+    // a maximum of this.maxTurnAngle degrees.
+    angle = oldHeading.angleTo(this.heading);
+    if (angle > this.maxTurnAngle) {
+      oldHeading.lerp(this.heading, this.maxTurnAngle / angle);
+      this.heading = oldHeading.normalize();
+    }
+
+    // Finally, normalize and add the heading to the position.
+    heading = new THREE.Vector3().copy(this.heading);
     heading.multiplyScalar(this.weight);
     this.position.add(heading);
+
+    // Now we make the boid look in the direction it is moving.
+    var lookVector = new THREE.Vector3().copy(this.position);
+    lookVector.add(this.heading);
+    this.lookAt(lookVector);
   };
 
   Boid.prototype.addBehavior = function(func) {

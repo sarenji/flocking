@@ -22,12 +22,17 @@ var camera =
     FAR);
 
 var scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2( 0x418a93, 0.0004 );
+
+// Debugging
+var axes = new THREE.AxisHelper(1000);
+scene.add(axes);
 
 // the camera starts at 0,0,0
 // so pull it back
 camera.position.x = 0;
 camera.position.y = 0;
-camera.position.z = 200;
+camera.position.z = 2000;
 camera.lookAt(new THREE.Vector3(0,0,0));
 
 // var controls = new THREE.PointerLockControls(camera);
@@ -42,23 +47,23 @@ var boidMaterial = new THREE.MeshLambertMaterial({
 });
 
 var highlightMaterial = new THREE.MeshLambertMaterial({
-  color: 0x33FF00,
-  transparent: true,
-  opacity: 0.5
+  color: 0x33FF00
 });
 
-var highlightSphere = new THREE.Mesh(new THREE.SphereGeometry(5)
+var highlightSphere = new THREE.Mesh(new THREE.SphereGeometry(50)
                                    , highlightMaterial);
+scene.add(highlightSphere);
 
-var pointLight = new THREE.PointLight(0xFFFFFF);
-
-// set its position
+// Add point lighting
+var pointLight = new THREE.PointLight(0xAABECF);
 pointLight.position.x = 10;
-pointLight.position.y = 50;
-pointLight.position.z = 130;
-
-// add to the scene
+pointLight.position.y = 2000;
+pointLight.position.z = 630;
 scene.add(pointLight);
+
+// Add ambient lighting
+var ambient = new THREE.AmbientLight(0x444654);
+scene.add(ambient);
 
 // attach the render-supplied DOM element
 $container.append(renderer.domElement);
@@ -73,18 +78,37 @@ function createBoid(mesh) {
   // Avoid going past a certain bound.
   boid.addBehavior(function() {
     var distance
+      , positionVector = new THREE.Vector3()
       , steerVector = new THREE.Vector3();
     steerVector.copy(boid.position);
-    distance = 200 - boid.position.length();
+    distance = 1000 - boid.position.length();
     steerVector.crossVectors(boid.position, boid.up);
     steerVector.multiplyScalar(1 / (distance * distance));
+
+    // If the distance is less than zero, then we're past the bounds.
+    // Add a vector toward the middle of the ball.
+    if (distance < 0) {
+      positionVector.copy(boid.position);
+      positionVector.negate().normalize();
+      steerVector.add(positionVector);
+    }
+
     this.heading.add(steerVector);
     this.heading.normalize();
   });
 
   boid.addBehavior(function() {
-    this.lookAt(new THREE.Vector3(0, 0, 0));
+    if (this.repel) {
+      this.heading.add(this.repel.force);
+      this.repel.force.copy(this.repel.originalForce);
+      this.repel.force.multiplyScalar(this.repel.multiplier);
+      this.repel.multiplier *= .5;
+      if (this.repel.multiplier < 0.05) {
+        this.repel = null;
+      }
+    }
   });
+
   flock.push(boid);
   scene.add(boid.mesh);
 }
@@ -97,17 +121,92 @@ $(document).on('geometryLoaded', function(e, geometry) {
 });
 
 
-var previousFrame, frame, controller;
+var previousFrame, controller;
 
-controller = new Leap.Controller();
+controller = new Leap.Controller({ enableGestures: true });
+controller.connect();
 
 function render(dt) {
-  frame = controller.frame();
   controls.update(dt);
   renderer.render(scene, camera);
   for (var i = 0, length = flock.length; i < length; i++) {
     flock[i].tick(dt);
   }
+  handleLeap(dt);
+}
+
+function handleLeap(dt) {
+  var frame, gesture;
+  var boid, boidRelPos, repelForce, handDirection, handPosition, distance;
+  frame = controller.frame();
+
+  // Discard invalid frames.
+  if (!frame.valid) {
+    return;
+  }
+
+  // Render sphere as a hand
+  for (var i = 0, length = frame.hands.length; i < length; i++) {
+    var hand = frame.hands[i];
+    highlightSphere.position.x = 2000 * hand.palmPosition[0] / frame.interactionBox.size[0];
+    highlightSphere.position.y = 2000 * hand.palmPosition[1] / frame.interactionBox.size[1] - 1000;
+    highlightSphere.position.z = 2000 * hand.palmPosition[2] / frame.interactionBox.size[2];
+
+    handPosition = highlightSphere.position;
+    handDirection = hand.direction;
+    handDirection = new THREE.Vector3(handDirection[0], handDirection[1], handDirection[2]);
+    for (var j = 0; j < flock.length; j++) {
+      boid = flock[j];
+
+      // Get the boid's relative position from the hand.
+      boidRelPos = new THREE.Vector3().subVectors(boid.position, handPosition);
+
+      // Get the repel force. It is perpendicular to the direction of the hand.
+      repelForce = new THREE.Vector3().copy(handDirection);
+      repelForce.multiplyScalar(handDirection.dot(boidRelPos));
+      repelForce.subVectors(boidRelPos, repelForce);
+
+      // The magnitude of the repel force is dependent on distance.
+      distance = boidRelPos.length();
+      distance = (distance * distance) / 1000;
+      repelForce.normalize();
+      repelForce.multiplyScalar(50 / distance);
+
+      // Store repel data as a property on the boid.
+      boid.repel = {
+        force: repelForce,
+        originalForce: repelForce,
+        multiplier: 1
+      };
+    }
+  }
+
+  // Split by detecting swipe motions
+  /*
+  for (var i = 0, length = frame.gestures.length; i < length; i++) {
+    gesture = frame.gestures[i];
+    if (gesture.type === 'swipe') {
+      direction = gesture.direction;
+      position = gesture.position;
+      repelForce = new THREE.Vector3(direction[0], direction[1], direction[2]);
+      repelForce.normalize();
+      handPosition = highlightSphere.position;
+      for (var j = 0; j < flock.length; j++) {
+        boidForce = new THREE.Vector3().copy(repelForce);
+        distance = flock[j].position.distanceToSquared(handPosition);
+        distance /= 1000;
+        boidForce.multiplyScalar(gesture.speed / distance);
+        flock[j].repel = {
+          force: boidForce,
+          originalForce: boidForce,
+          multiplier: 1
+        };
+      }
+    }
+  }
+  */
+
+  // Record previous frame.
   previousFrame = frame;
 }
 
